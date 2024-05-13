@@ -146,52 +146,38 @@ def allocate(path,link_capacity, link_capacities):
 
     
 
-    MacDestToPort = {
+    SwitchDestToPort = {
             "s1": {
                 "h1": 1,
-                "h2": 2,
-                "h3": 2,
-                "h4": 4,
-                "h5": 4,
-                "h6": 3,
-                "h7": 3
+                "s2": 2,
+                "s4": 4,
+                "s5": 3
             },
             "s2": {
-                "h1": 2,
                 "h2": 1,
-                "h3": 3,
-                "h4": 2,
-                "h5": 2,
-                "h6": 4,
-                "h7": 4
+                "s1": 2,
+                "s3": 3,
+                "s5": 4
             },
             "s3": {
-                "h1": 2,
-                "h2": 2,
                 "h3": 1,
-                "h4": 3,
-                "h5": 3,
-                "h6": 3,
-                "h7": 3
+                "s2": 2,
+                "s4": 3
             },
             "s4": {
-                "h1": 3,
-                "h2": 3,
-                "h3": 4,
                 "h4": 1,
                 "h5": 2,
-                "h6": 5,
-                "h7": 5
+                "s1": 3,
+                "s3": 4,
+                "s5": 5
 
             },
             "s5": {
-                "h1": 3,
-                "h2": 3,
-                "h3": 3,
-                "h4": 5,
-                "h5": 5,
                 "h6": 1,
-                "h7": 2
+                "h7": 2,
+                "s1": 4,
+                "s2": 3,
+                "s4": 5
                 
             }
         }
@@ -208,13 +194,28 @@ def allocate(path,link_capacity, link_capacities):
         #install the flow rule
         #sudo ovs-ofctl add-flow s5 ip,priority=65500,dl_type=0x0800,nw_src=10.0.0.7,nw_dst=10.0.0.2,actions=output:3
         #sudo ovs-ofctl del-flows s5 dl_type=0x0800,nw_src=10.0.0.7,nw_dst=10.0.0.2
-        port = MacDestToPort[switch][path[-1]]
-        flow_table_command1[switch] = "sudo ovs-ofctl add-flow " + switch + " ip,priority=65500,dl_type=0x0800,nw_src=" + src_hostIP + ",nw_dst=" + dst_hostIP + ",actions=output:" + str(port)
-        port = MacDestToPort[switch][path[0]]
-        flow_table_command2[switch] = "sudo ovs-ofctl add-flow " + switch + " ip,priority=65500,dl_type=0x0800,nw_src=" + dst_hostIP + ",nw_dst=" + src_hostIP + ",actions=output:" + str(port)
-        print("command: ",switch, ": ",flow_table_command1[switch], "\n", flow_table_command2[switch])
-        subprocess.run(flow_table_command1[switch], shell=True)
-        subprocess.run(flow_table_command2[switch], shell=True)
+        print("switch: ", switch)
+        print("path: ", path)
+        next_switch = path[path.index(switch)+1]
+        print("next switch: ", next_switch)
+        port = SwitchDestToPort[switch][next_switch]
+        flow_table_command = "sudo ovs-ofctl add-flow " + switch + " ip,priority=65500,dl_type=0x0800,nw_src=" + src_hostIP + ",nw_dst=" + dst_hostIP + ",actions=output:" + str(port)
+        print("command: ",switch, ": ",flow_table_command)
+        subprocess.run(flow_table_command, shell=True)
+        
+        
+        if switch == path[-2]:
+            switch = path[0]
+            next_switch = path[1]
+            print("path[2]: ", path[1])
+            print("path[1]: ", path[0])
+
+        port = SwitchDestToPort[next_switch][switch]
+
+        flow_table_command = "sudo ovs-ofctl add-flow " + next_switch + " ip,priority=65500,dl_type=0x0800,nw_src=" + dst_hostIP + ",nw_dst=" + src_hostIP + ",actions=output:" + str(port)
+        print("command: ",switch, ": ",flow_table_command)
+        subprocess.run(flow_table_command, shell=True)
+        
 
     return link_capacities
 
@@ -242,7 +243,7 @@ def create_slice(src_host, dst_host, user_capacity, link_capacities):
         link_capacities = allocate(path, user_capacity, link_capacities)
     else:
         print("No available bandwidth")
-        allocate_bool = input("Do you want to allocate it anyway? (y/n)")
+        allocate_bool = input("Do you want to allocate it anyway? (y/n) \nThis is only for testing ")
         
         if allocate_bool == "y":
             link_capacities = allocate(path, user_capacity, link_capacities)
@@ -285,12 +286,11 @@ def delete_slice(link_capacities):
     print("Link capacities after deallocation:", link_capacities)
     
 
-    flow_table_command1 = []
-    flow_table_command2 = []
+    flow_table_command1 = {}
+    flow_table_command2 = {}
 
     #delete the flow rules
     for switch in SLICES[i][1:-1]:
-        #remove
         flow_table_command1[switch]= "sudo ovs-ofctl del-flows " + switch + " dl_type=0x0800,nw_src=" + nameToIP[SLICES[i][0]]+ ",nw_dst=" + nameToIP[SLICES[i][-1]]
         flow_table_command2[switch]= "sudo ovs-ofctl del-flows " + switch + " dl_type=0x0800,nw_src=" + nameToIP[SLICES[i][-1]] + ",nw_dst=" + nameToIP[SLICES[i][0]]
         print("command: ",switch, ": ",flow_table_command1[switch], "\n", flow_table_command2[switch])
