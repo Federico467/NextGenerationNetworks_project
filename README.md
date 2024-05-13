@@ -19,10 +19,16 @@
 The goal of this project is to develop, starting from a dense network, a program that allows flexible activation and deactivation of flows between nodes, through a commandline program that guides the user.
 
 
-The network is composed of 5 switches and 7 hosts, the white numbers rappresent the link capacities in Mbps, the capacities between host and switch are supposed to be infinite, here is the topology:
+The network is composed of 5 switches and 7 hosts, here is the topology:
+
+- The white numbers rappresent the link capacities in Mbps
+- The white small ones are the port numbers
+- The capacities between host and switch are supposed to be infinite
+
 
 
 <img src="Topology (2).jpg" alt="width" style="width:80%;" />
+
 
 
 The user can choose the source, the destination hosts and the bandwidth to allocate.
