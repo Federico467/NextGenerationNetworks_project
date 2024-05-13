@@ -22,7 +22,7 @@ The goal of this project is to develop, starting from a dense network, a program
 The network is composed of 5 switches and 7 hosts, the white numbers rappresent the link capacities in Mbps, the capacities between host and switch are supposed to be infinite, here is the topology:
 
 
-<img src="Topology.jpg" alt="width" style="width:80%;" />
+<img src="Topology (2).jpg" alt="width" style="width:80%;" />
 
 
 The user can choose the source, the destination hosts and the bandwidth to allocate.
