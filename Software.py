@@ -42,21 +42,21 @@ def calculate_path(topology, src, dst, link_capacities):
         capacity = link_attrs.get('bw', 0)  # Default to 0 if bw attribute doesn't exist
         G.add_edge(src_, dst_, bw=capacity)
 
-    print("Nodes:", G.nodes())
-    print("Edges:", G.edges())
+    #print("Nodes:", G.nodes())
+    #print("Edges:", G.edges())
 
     #create a dictionary to store the capacity of each link
     link_capacity = {}
-    print("link capacities: ", link_capacities)
+    #print("link capacities: ", link_capacities)
     if link_capacities:
-        print("second time running the function.--------------------------------------------------------------------------------------------")
+        #print("second time running the function.--------------------------------------------------------------------------------------------")
         link_capacity = link_capacities.copy()
     else:
         for edge in G.edges():
             link_capacity[edge] = G[edge[0]][edge[1]]['bw']
 
     link_capacities_backup = link_capacity.copy()
-    print("Link capacity:", link_capacity)
+    #print("Link capacity:", link_capacity)
     
     #create a dictionary to store the path from src to dst
     path = nx.shortest_path(G, source=src, target=dst, weight='bw')
@@ -84,10 +84,10 @@ def calculate_path(topology, src, dst, link_capacities):
                 del link_capacity[edge]
                 break
 
-        print("Path:", path)
+        #print("Path:", path)
 
-    print("\nPath:", path)  # Debug print to check the structure of path
-    print("link capa", link_capacities_backup)
+    #print("\nPath:", path)  # Debug print to check the structure of path
+    #print("link capa", link_capacities_backup)
 
     if path:
         max_bandwidth = float('inf')  # Initialize with positive infinity
@@ -108,10 +108,10 @@ def calculate_path(topology, src, dst, link_capacities):
     print("Final path:", path)
 
     if not link_capacities:
-        print("first time, returning also link capacities.--------------------------------------------------------------------------------------------")
+        #print("first time, returning also link capacities.--------------------------------------------------------------------------------------------")
         return path,max_bandwidth, link_capacities_backup
     else:
-        print("second time, returning only path and max bandwidth.--------------------------------------------------------------------------------------------")
+        #print("second time, returning only path and max bandwidth.--------------------------------------------------------------------------------------------")
         return path,max_bandwidth
 
 
@@ -122,7 +122,7 @@ def calculate_path(topology, src, dst, link_capacities):
 def allocate(path,link_capacity, link_capacities):
     #remove the capacity from the links
     for u, v in zip(path[:-1], path[1:]):
-        print("u,v=", u,v)
+        #print("u,v=", u,v)
         #check if link u v exists
         
         if (u, v) in link_capacities:
@@ -138,7 +138,7 @@ def allocate(path,link_capacity, link_capacities):
             return
         
         
-    print("Link capacities after allocation: ", link_capacities)
+    #print("Link capacities after allocation: ", link_capacities)
 
     SLICES.append(path.copy()+[link_capacity])
 
@@ -194,26 +194,26 @@ def allocate(path,link_capacity, link_capacities):
         #install the flow rule
         #sudo ovs-ofctl add-flow s5 ip,priority=65500,dl_type=0x0800,nw_src=10.0.0.7,nw_dst=10.0.0.2,actions=output:3
         #sudo ovs-ofctl del-flows s5 dl_type=0x0800,nw_src=10.0.0.7,nw_dst=10.0.0.2
-        print("switch: ", switch)
-        print("path: ", path)
+        #print("switch: ", switch)
+        #print("path: ", path)
         next_switch = path[path.index(switch)+1]
-        print("next switch: ", next_switch)
+        #print("next switch: ", next_switch)
         port = SwitchDestToPort[switch][next_switch]
         flow_table_command = "sudo ovs-ofctl add-flow " + switch + " ip,priority=65500,dl_type=0x0800,nw_src=" + src_hostIP + ",nw_dst=" + dst_hostIP + ",actions=output:" + str(port)
-        print("command: ",switch, ": ",flow_table_command)
+        #print(flow_table_command)
         subprocess.run(flow_table_command, shell=True)
         
         
         if switch == path[-2]:
             switch = path[0]
             next_switch = path[1]
-            print("path[2]: ", path[1])
-            print("path[1]: ", path[0])
+            #print("path[2]: ", path[1])
+            #print("path[1]: ", path[0])
 
         port = SwitchDestToPort[next_switch][switch]
 
         flow_table_command = "sudo ovs-ofctl add-flow " + next_switch + " ip,priority=65500,dl_type=0x0800,nw_src=" + dst_hostIP + ",nw_dst=" + src_hostIP + ",actions=output:" + str(port)
-        print("command: ",switch, ": ",flow_table_command)
+        #print(flow_table_command)
         subprocess.run(flow_table_command, shell=True)
         
 
@@ -227,19 +227,19 @@ def create_slice(src_host, dst_host, user_capacity, link_capacities):
     custom_topo = TOPO
     # Calculate path
     if not link_capacities:
-        print("first time running the function create slice.--------------------------------------------------------------------------------------------")
+        #print("first time running the function create slice.--------------------------------------------------------------------------------------------")
         path, max_bandwidth, link_capacities = calculate_path(custom_topo, src_host, dst_host, link_capacities)
     else:
-        print("second time running the function create slice.--------------------------------------------------------------------------------------------")
+        #print("second time running the function create slice.--------------------------------------------------------------------------------------------")
         path, max_bandwidth = calculate_path(custom_topo, src_host, dst_host, link_capacities)
-    print("max band=", max_bandwidth)
-    print("path =", path)
-    print(user_capacity)
+    #print("max band=", max_bandwidth)
+    #print("path =", path)
+    #print(user_capacity)
     #if path doesnt exist exit this function
     if not path:
         return
     if max_bandwidth >= user_capacity:
-        print("allocate")
+        #print("allocate")
         link_capacities = allocate(path, user_capacity, link_capacities)
     else:
         print("No available bandwidth")
@@ -283,7 +283,7 @@ def delete_slice(link_capacities):
             print("Link does not exist")
             return
         
-    print("Link capacities after deallocation:", link_capacities)
+    #print("Link capacities after deallocation:", link_capacities)
     
 
     flow_table_command1 = {}
@@ -293,7 +293,7 @@ def delete_slice(link_capacities):
     for switch in SLICES[i][1:-1]:
         flow_table_command1[switch]= "sudo ovs-ofctl del-flows " + switch + " dl_type=0x0800,nw_src=" + nameToIP[SLICES[i][0]]+ ",nw_dst=" + nameToIP[SLICES[i][-1]]
         flow_table_command2[switch]= "sudo ovs-ofctl del-flows " + switch + " dl_type=0x0800,nw_src=" + nameToIP[SLICES[i][-1]] + ",nw_dst=" + nameToIP[SLICES[i][0]]
-        print("command: ",switch, ": ",flow_table_command1[switch], "\n", flow_table_command2[switch])
+        #print(flow_table_command1[switch], "\n", flow_table_command2[switch])
         subprocess.run(flow_table_command1[switch], shell=True)
         subprocess.run(flow_table_command2[switch], shell=True)
     
@@ -348,12 +348,12 @@ def inputs():
                 print("Source and destination hosts cannot be the same")
                 exit(1)
             
-            print("Add new flows")
+            #print("Add new flows")
             link_capacities = create_slice(src_host, dst_host, user_capacity, link_capacities)
 
 
         if action == "delete":
-            print("Delete existing flows")
+            #print("Delete existing flows")
             link_capacities = delete_slice(link_capacities)
         
         print("\n\n\n\n")
